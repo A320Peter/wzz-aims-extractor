@@ -5,7 +5,7 @@ I wrote this tool as an experiment for my own interest. I share the code as I ha
 
 If you are not a Wizz Air pilot you should stop now. This script is useless for you.
 
-This script was written in Python 3.7 and free to use.
+This script was written in Python 3.7 and it is free to use.
 
 # Acceptable Usage Policy
 
