@@ -23,5 +23,5 @@ I make no warranty that
 Authentication and data fetching is fully compliant with security policy. No login name or password stored at anywhere. Password is encrypted before posting request. No influence on any AIMS settings. The script only fetches your roster and logbook data. The application will terminate in case of active changes in your roster preventing accidentally accepting any notifications. This tool uses the same URL request method like any other AIMS fetching tool in Google Play Store or App Store. If you have any concern or dubt, feel free to inspect the source code.
 
 # Thanks
-for Jon Hurst for the original code: https://github.com/JonHurst
+for Jon Hurst for the original idea: https://github.com/JonHurst
 and for Stijn reminding me about Jon's script :)
