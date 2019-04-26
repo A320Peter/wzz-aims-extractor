@@ -5,6 +5,8 @@ I wrote this tool as an experiment for my own interest. I share the code as I ha
 
 If you are not a Wizz Air pilot you should stop now. This script is useless for you.
 
+This script was written in Python 3.7 and free to use.
+
 # Acceptable Usage Policy
 
 The use of the script downloaded on this site is done at your own discretion and risk and with agreement that you will be solely responsible for consequences resulted from the usage of the tool.
@@ -18,4 +20,8 @@ I make no warranty that
 - any errors in the script obtained from me will be corrected. 
 
 # Security Overview
-Authentication and data fetching is fully compliant with security policy. No login name or password stored at anywhere. Password is encrypted before posting request. No influence on any AIMS settings. The script only fetches your roster and logbook data. The application will terminate in case of active changes in your roster preventing accidentally accepting any notification.
+Authentication and data fetching is fully compliant with security policy. No login name or password stored at anywhere. Password is encrypted before posting request. No influence on any AIMS settings. The script only fetches your roster and logbook data. The application will terminate in case of active changes in your roster preventing accidentally accepting any notifications. This tool uses the same URL request method like any other AIMS fetching tool in Google Play Store or App Store. If you have any concern or dubt, feel free to inspect the source code.
+
+# Thanks
+for Jon Hurst for the original code: https://github.com/JonHurst
+and for Stijn reminding me about Jon's script :)
