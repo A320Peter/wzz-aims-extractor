@@ -3,6 +3,8 @@ This utility is for downloading and converting your logbook data from WiZZ Air A
 
 I wrote this tool as an experiment for my own interest. I share the code as I have received a lots of request. By downloading the script you fully agree with the Acceptable Usage Policy and Security Overview.
 
+If you are not a Wizz Air pilot you should stop now. This script is useless for you.
+
 # Acceptable Usage Policy
 
 The use of the script downloaded on this site is done at your own discretion and risk and with agreement that you will be solely responsible for consequences resulted from the usage of the tool.
