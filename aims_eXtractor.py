@@ -520,7 +520,7 @@ def delete_last_console_lines(n=1):
 def main():
 
     # app version
-    version = 0.3
+    version = 0.4
 
     # clear console
     clear()
@@ -652,40 +652,116 @@ def main():
                 logbook[i].SIM_time + "  " + logbook[i].SIM_note)
         """
 
+        # ask for output format
+        print("")
+        print(" 1)  mccPILOTLOG")
+        print(" 2)  LogTen Pro")
+        print("")
+        output = input(" Choose output format (1 or 2): ")
+        while output != "1" and output != "2":
+            delete_last_console_lines(1)
+            output = input(" Choose output format (1 or 2): ")
+        delete_last_console_lines(1)
+
+        delete_last_console_lines(3)
+        # ask for flight number format
+        print(" 1)  W6 2201")
+        print(" 2)   W62201")
+        print(" 3)     2201")
+        print("")
+        fnum_format = input(" Choose flight number format (1 or 2 or 3): ")
+        while fnum_format != "1" and fnum_format != "2" and fnum_format != "3":
+            delete_last_console_lines(1)
+            fnum_format = input(" Choose output format (1 or 2): ")
+        print("")
+
         # Write the logbook
         cautions = 0
-        with open(os.path.expanduser("~/Desktop")+'/logbook_'+datetime.today().strftime('%d-%m-%Y_%H.%M.%S')+'.csv', mode='w') as logbook_file:
+
+        if output == "1":
+            logbook_filename = '/Logbook_mccPILOTLOG_'+datetime.today().strftime('%d-%m-%Y_%H.%M.%S')+'.csv' # mccPILOTLOG filename
+        else:
+            logbook_filename = '/Logbook_LogTenPro_'+datetime.today().strftime('%d-%m-%Y_%H.%M.%S')+'.csv' # LogTen filename
+
+        with open(os.path.expanduser("~/Desktop")+logbook_filename, mode='w') as logbook_file:
             logbook_writer = csv.writer(logbook_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-            logbook_writer.writerow(['MCC_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', 'TIME_ARR', 'AC_MODEL', 'AC_REG', 'TIME_TOTAL', 'TIME_PIC', 'TIME_IFR', 'AC_ISSIM', 'CAPACITY', 'TO_DAY', 'TO_NIGHT', 'LDG_DAY', 'LDG_NIGHT', 'PILOT1_NAME', 'PILOT2_NAME', 'REMARKS'])
-            
+            if output == "1":
+                logbook_writer.writerow(['MCC_DATE', 'FLIGHTNUMBER', 'AF_DEP', 'AF_ARR', 'TIME_DEP', 'TIME_ARR', 'AC_MODEL', 'AC_REG', 'TIME_TOTAL', 'TIME_PIC', 'TIME_IFR', 'AC_ISSIM', 'CAPACITY', 'TO_DAY', 'TO_NIGHT', 'LDG_DAY', 'LDG_NIGHT', 'PF', 'PILOT1_NAME', 'PILOT2_NAME', 'REMARKS', 'X'])
+            else:
+                logbook_writer.writerow(['flight_flightDate', 'flight_flightNumber', 'flight_from', 'flight_to', 'flight_actualDepartureTime', 'flight_actualArrivalTime', 'aircraft_secondaryID', 'aircraft_aircraftID', 'flight_totalTime', 'flight_pic', 'flight_ifr', 'flight_simulator', 'flight_picCapacity', 'flight_dayTakeoffs', 'flight_nightTakeoffs', 'flight_dayLandings', 'flight_nightLandings', 'flight_pilotFlyingCapacity', 'flight_selectedCrewPIC', 'flight_selectedCrewSIC', 'flight_remarks', 'flight_flagged'])
 
             for i in range(0, len(logbook)):
                 
                 total_time = logbook[i].total
 
                 # am I PIC or FO?
-                if logbook[i].PIC_name == "Self" or logbook[i].PIC_name == "":
-                    TIME_PIC = logbook[i].total
-                    CAPACITY = "PIC"
-                    PILOT1 = "Self"
-                    PILOT2 = logbook[i].otherpilot # from roster
+                if output == "1":
+                    if logbook[i].PIC_name == "Self" or logbook[i].PIC_name == "":
+                        TIME_PIC = logbook[i].total
+                        CAPACITY = "PIC"
+                        PILOT1 = "Self"
+                        PILOT2 = logbook[i].otherpilot # from roster
+                    else:
+                        TIME_PIC = ""
+                        CAPACITY = "Co-Pilot"
+                        PILOT1 = logbook[i].PIC_name # from aims logbook
+                        PILOT2 = "Self"
+                        logbook[i].err_flag = "" # PIC name is accurate so we can delete the warning flag
                 else:
-                    TIME_PIC = ""
-                    CAPACITY = "Co-Pilot"
-                    PILOT1 = logbook[i].PIC_name # from aims logbook
-                    PILOT2 = "Self"
-                    logbook[i].err_flag = "" # PIC name is accurate so we can delete the warning flag
+                    if logbook[i].PIC_name == "Self" or logbook[i].PIC_name == "":
+                        TIME_PIC = logbook[i].total
+                        CAPACITY = "1"
+                        PILOT1 = "Self"
+                        PILOT2 = logbook[i].otherpilot # from roster
+                    else:
+                        TIME_PIC = ""
+                        CAPACITY = "0"
+                        PILOT1 = logbook[i].PIC_name # from aims logbook
+                        PILOT2 = "Self"
+                        logbook[i].err_flag = "" # PIC name is accurate so we can delete the warning flag
 
                 # is it SIM or real time?
-                if logbook[i].SIM_note != "":
-                    SIM = "True"
-                    total_time = logbook[i].SIM_time
-                    FNUM = ""
+                if output == "1":
+                    if logbook[i].SIM_note != "":
+                        SIM = "True"
+                        total_time = logbook[i].SIM_time
+                        FNUM = ""
+                    else:
+                        SIM = "False"
+                        FNUM = logbook[i].flightnum
                 else:
-                    SIM = "False"
-                    FNUM = logbook[i].flightnum
+                    if logbook[i].SIM_note != "":
+                        SIM = logbook[i].SIM_time
+                        total_time = ""
+                        FNUM = "sim"
+                    else:
+                        SIM = "False"
+                        FNUM = logbook[i].flightnum
 
+                # format the flight number
+                if fnum_format == "1" and FNUM != "sim":
+                    FNUM = "W6 " + FNUM
+                elif fnum_format == "2" and FNUM != "sim":
+                    FNUM = "W6" + FNUM
+
+                # pilot capacity
+                if logbook[i].pf_to_day == "1" or logbook[i].pf_to_night == "1" or logbook[i].pf_ldg_day == "1" or logbook[i].pf_ldg_night == "1":
+                    PF_capacity = "1"
+                else:
+                    PF_capacity = "0"
+
+                # AC model. For LogTen we only use the registration to avoid conflicts
+                if output == "1":
+                    aircraft_model = "A"+logbook[i].type_
+                else:
+                    aircraft_model = ""
+
+                # if flight is flagged with error put a marker flag for LogTen Pro
+                if logbook[i].err_flag != "":
+                    flag_marker = "1"
+                else:
+                    flag_marker = "0"
 
                 logbook_writer.writerow([datetime.utcfromtimestamp(logbook[i].date).strftime('%d/%m/%Y'),
                  FNUM,
@@ -693,7 +769,7 @@ def main():
                  logbook[i].to,
                  logbook[i].off,
                  logbook[i].on,
-                 "A"+logbook[i].type_,
+                 aircraft_model,
                  logbook[i].reg,
                  total_time,
                  TIME_PIC,
@@ -704,16 +780,21 @@ def main():
                  logbook[i].pf_to_night,
                  logbook[i].pf_ldg_day,
                  logbook[i].pf_ldg_night,
+                 PF_capacity,
                  PILOT1,
                  PILOT2,
-                 logbook[i].SIM_note])
+                 logbook[i].SIM_note,
+                 flag_marker])
 
                 if logbook[i].err_flag != "":
                     if cautions == 0: # we want to print 'cautions' title only once
-                        print("")
-                        print("(!) CAUTIONS:")
-                        print("")
-                    print(datetime.utcfromtimestamp(logbook[i].date).strftime('%d/%m/%Y') + "  " + FNUM + "  " + logbook[i].from_ + "->" + logbook[i].to + "  CAUTION: " + logbook[i].err_flag)
+                        print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        print(" CAUTIONs:")
+                        print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    if output == "1":
+                        print(datetime.utcfromtimestamp(logbook[i].date).strftime('%d/%m/%Y') + "  " + FNUM + "  " + logbook[i].from_ + "->" + logbook[i].to + "  CAUTION: " + logbook[i].err_flag)
+                    elif output == "2" and cautions == 0:
+                        print(" Some flights will be red flagged after imoport. Please verify the other pilot's name on those flights as AIMS data is confusing.")
                     cautions += 1
 
                 # if there is no flight number and not SIM, the flight wasn't fetched from the roster probably there is an error
@@ -722,21 +803,35 @@ def main():
                         print("")
                         print("(!) CAUTIONS:")
                         print("")
-                    print(datetime.utcfromtimestamp(logbook[i].date).strftime('%d/%m/%Y') + "  ????  " + logbook[i].from_ + "->" + logbook[i].to + "  CAUTION: Please check this flight. Missing data.")
+                    print(datetime.utcfromtimestamp(logbook[i].date).strftime('%d/%m/%Y') + "  ????  " + logbook[i].from_ + "->" + logbook[i].to + "  CAUTION: Please check this flight. Something is not OK. <------------")
                     cautions += 1
 
 
-        print("")
-        print(" Note:")
-        print(" Night time is not automatically calculated in the generated logbook as")
-        print(" AIMS doesn't have this feature. To calculate proper night hours do the following:")
-        print(" after importing flights into mccPILOTLOG: select all the imported flights")
-        print(" and tick the box: 'Re-calculate Night Time' then click on Execute button.")
-        print("")
-        print("*** COMPLETED with " + str(cautions) + " cautions. ***")
-        print("")
-        print("Logbook has been saved to: " + os.path.expanduser("~/Desktop")+'/logbook_'+datetime.today().strftime('%d-%m-%Y_%H.%M.%S')+'.csv')
-        print("")
+        if output == "1":
+            print("")
+            print(" Note:")
+            print(" Night time is not automatically calculated in the generated logbook as")
+            print(" AIMS doesn't have this feature. To calculate proper night hours do the following:")
+            print(" after importing flights into mccPILOTLOG: select all the imported flights at the same time")
+            print(" and tick the box at the bottom panel: 'Re-calculate Night Time' then click on Execute button.")
+            print("")
+            print("*** COMPLETED with " + str(cautions) + " cautions. ***")
+            print("")
+            print("Logbook has been saved to: " + os.path.expanduser("~/Desktop")+logbook_filename)
+            print("")
+        else:
+            print("")
+            print(" Note:")
+            print(" Night time is not automatically calculated in the generated logbook as")
+            print(" AIMS doesn't have this feature. To calculate proper night hours do the following:")
+            print(" after importing flights into LogTen Pro: select all the imported flights at the same time")
+            print(" and select 'Night Time' text field at the right panel. Tap space to autofill.")
+            print("")
+            print("*** COMPLETED with " + str(cautions) + " cautions. ***")
+            print("")
+            print("Logbook has been saved to: " + os.path.expanduser("~/Desktop")+logbook_filename)
+            print("")
+
         sys.exit(0)
 
 
