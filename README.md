@@ -1,5 +1,5 @@
 # WiZZ-AIMS-eXtractor
-This utility is for downloading and converting your logbook data from WiZZ Air AIMS to a CSV file that can be imported to electronic logbooks (eg. mccPILOTLOG). 
+This utility is for downloading and converting your logbook data from WiZZ Air AIMS to a CSV file that can be imported to electronic logbooks (eg. mccPILOTLOG or LogTen). 
 
 I wrote this tool as an experiment for my own interest. I share the code as I have received a lots of request. By downloading the script you fully agree with the Acceptable Usage Policy and Security Overview.
 
@@ -21,6 +21,9 @@ I make no warranty that
 
 # Security Overview
 Authentication and data fetching is fully compliant with security policy. No login name or password stored at anywhere. Password is encrypted before posting request. No influence on any AIMS settings. The script only fetches your roster and logbook data. The application will terminate in case of active changes in your roster preventing accidentally accepting any notifications. This tool uses the same URL request method like any other AIMS fetching tool in Google Play Store or App Store. If you have any concern or dubt, feel free to inspect the source code.
+
+# How to Use
+You may either download the source code and run it in native Python environment or alternatively the precompiled Windows EXE or macOS/Linux executables are also available. On Windows system you may need to run as Administrator if the command prompt window disappears.
 
 # Thanks
 for Jon Hurst for the original idea: https://github.com/JonHurst
