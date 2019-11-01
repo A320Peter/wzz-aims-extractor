@@ -1,7 +1,7 @@
 import requests
 import base64
 import hashlib
-import sys
+import sys, getopt
 from bs4 import BeautifulSoup 
 import getpass
 import unicodedata
@@ -53,6 +53,24 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+
+# handling exceptions
+def show_exception_and_exit(exc_type, exc_value, tb):
+    import traceback
+    traceback.print_exception(exc_type, exc_value, tb)
+    print("")
+    print(">>>>> ERROR <<<<<")
+    print("")
+    print("An error has occured. Please try to download your roster for different")
+    print("time periods in this year or last year. Try with 10 days or more.") 
+    print("")
+    print("Please copy paste and send the alien error message to the developer mentioning") 
+    print("that the roster download is possible for different periods or not possible at all.")
+    print("")
+    input("Press enter to exit.")
+    sys.exit(-1)
 
 
 # define our clear function 
@@ -144,7 +162,7 @@ def connect(username:str, password:str, start_date:str) -> bool:
     print("Connecting..", end="", flush=True)
 
     # send login request
-    r = _session.post("https://wzz-crew.aims.aero/wtouch/wtouch.exe/verify",
+    r = _session.post("https://ecrew.wizzair.com/wtouch/wtouch.exe/verify",
                {"Crew_Id": base64.b64encode(username.encode()),
                 "Crm": hashlib.md5(password.encode()).hexdigest()},
                       timeout=20)
@@ -162,7 +180,7 @@ def connect(username:str, password:str, start_date:str) -> bool:
 
 
     # check if there is any changes
-    r = _session.get("https://wzz-crew.aims.aero/wtouch/perinfo.exe/index", timeout=20)
+    r = _session.get("https://ecrew.wizzair.com/wtouch/perinfo.exe/index", timeout=20)
     if r.text.find("You have changes") != -1:
         print("\n=== ERROR ===")
         print("You have changes.")
@@ -205,10 +223,10 @@ def download_roster(start_date:str, end_date:str) -> [str]:
         #print(date)
         time_format = "2"  # 2 = UTC
         
-        r = _session.get("https://wzz-crew.aims.aero/wtouch/perinfo.exe/crwsche?cal1=" + date + "&nDays=" + days + "&times_format=" + time_format, timeout=20)
+        r = _session.get("https://ecrew.wizzair.com/wtouch/perinfo.exe/crwsche?cal1=" + date + "&nDays=" + days + "&times_format=" + time_format, timeout=20)
         crwsche_page = BeautifulSoup(r.text, 'html.parser')
         roster_link = crwsche_page.frame.next_sibling.next_sibling.get("src")
-        _full_roster_link = "https://wzz-crew.aims.aero" + roster_link
+        _full_roster_link = "https://ecrew.wizzair.com" + roster_link
         
         #print(_full_roster_link)
     
@@ -230,10 +248,10 @@ def download_logbook(start_date:str, end_date:str) -> str:
     
     printProgressBar(1, 3, prefix = 'Downloading Logbook...', suffix = ' ', length = 50)
 
-    r = _session.get("https://wzz-crew.aims.aero/wtouch/perinfo.exe/pilotlogbook?cal1=" + start_date + "&cal2=" + end_date, timeout=180)
+    r = _session.get("https://ecrew.wizzair.com/wtouch/perinfo.exe/pilotlogbook?cal1=" + start_date + "&cal2=" + end_date, timeout=180)
     log_page = BeautifulSoup(r.text, 'html.parser')
     logbook_link = log_page.frame.next_sibling.next_sibling.get("src")
-    _full_logbook_link = "https://wzz-crew.aims.aero" + logbook_link
+    _full_logbook_link = "https://ecrew.wizzair.com" + logbook_link
 
     printProgressBar(2, 3, prefix = 'Downloading Logbook...', suffix = ' ', length = 50)
 
@@ -454,9 +472,18 @@ def parse_roster(html_doc:str, start_date:str) -> [Sector]:
                 ts = int(utc_start_date) + (i * 86400)
                 duty_date = datetime.utcfromtimestamp(ts).strftime('%d/%m/%Y')
                 date_index = crew_list_string.find(duty_date)
+                count = 0 
                 while FoundCrew == False:
+
+                    count += 1
                     sub_index1 = crew_list_string.find('>', date_index)-2
                     flight_numbers = crew_list_string[date_index:sub_index1]
+                    
+                    #print("looking for: " + flightnum_no_suffix + " or ALL")
+                    #print("found: " + flight_numbers)
+                    #print("crew_list_string: " + crew_list_string)
+                    #print("count: " + str(count))
+
                     if flight_numbers.find(flightnum_no_suffix) != -1 or flight_numbers.find("All") != -1:
                         
                         sub_index2_a = crew_list_string.find('>', sub_index1+3)
@@ -467,6 +494,7 @@ def parse_roster(html_doc:str, start_date:str) -> [Sector]:
                             sub_index2 = sub_index2_b - 5
 
                         other_crew = crew_list_string[sub_index1+4:sub_index2]
+
                         FoundCrew = True
 
                         # check for redundant same role crew member and put a flag indicating possible mismatch.
@@ -475,6 +503,15 @@ def parse_roster(html_doc:str, start_date:str) -> [Sector]:
                         if (search_string.count("SF>") > 1) or (search_string.count("CP>") > 1) or \
                         ((search_string.count("SF>") > 0) and (search_string.count("CP>") > 0)):
                             err = "Verify the other pilot's name on this flight."
+
+                    # in some exceptional cases (like ferry flights on consequtive days with different time zones) in the crew list the flight number might not exist
+                    # for the actual date. If this happens after several unsuccessful loops, let's check for the flight number on the prev. day to avoid infinite loop
+                    elif count > 10:
+                        ts2 = int(utc_start_date) + (i * 86400) - 86400
+                        duty_date = datetime.utcfromtimestamp(ts2).strftime('%d/%m/%Y')
+                        date_index = crew_list_string.find(duty_date)
+                        count = 0
+
 
                     else:
                         date_index = crew_list_string.find(duty_date, date_index+1)
@@ -520,10 +557,35 @@ def delete_last_console_lines(n=1):
 def main():
 
     # app version
-    version = 0.4
+    version = 0.5
 
     # clear console
     clear()
+
+
+    # handling command line arguments
+    # -f <filename>     /parsing a local HTML file.
+    inputfile = ''
+    if len(sys.argv) > 2:
+        if sys.argv[1] == "-f":
+            inputfile = sys.argv[2]
+            if not os.path.isfile('./' + inputfile):
+                print("File does not exist.")
+                print("")
+                input("Press any key to exit.")
+                sys.exit(0)
+        else:
+            print("Available arguments:")
+            print("")
+            print("-f <filename>")
+            print("Parsing a local HTML file.")
+            print("")
+            input("Press any key to exit.")
+            sys.exit(2)
+
+    if inputfile != '':
+        print(inputfile + " loaded.")
+
 
     if new_version(version):
         print("")
@@ -540,6 +602,8 @@ def main():
         print(" | *** Project website:                                              |")
         print(" |       https://github.com/A320Peter/wzz-aims-extractor             |")
         print(" =====================================================================")
+        print(" ")
+        input("Press any key to exit.")
         sys.exit(0)
 
 
@@ -586,32 +650,55 @@ def main():
     print("               End date: "+dt_end)
 
 
-    print("")
-    userID = input("   Enter your ID number: ")
-    print("")
-    pwd = getpass.getpass('          AIMS password: ')
-    delete_last_console_lines(1)
-    print('          AIMS password: ******')
-    print("")
+    # we don't need authentication if it's a local file
+    if inputfile == '':
+        print("")
+        userID = input("   Enter your ID number: ")
+        print("")
+        pwd = getpass.getpass('          AIMS password: ')
+        delete_last_console_lines(1)
+        print('          AIMS password: ******')
+        print("")
+    else:
+        userID = 'template'
+        pwd = 'template'
+
+
     
     AimsRoster = []
     AimsRoster.clear()
     logbook = []
     logbook.clear()
 
-    if connect(userID, pwd, dt_start):
-        roster_html = download_roster(dt_start, dt_end)
-        
+    if connect(userID, pwd, dt_start) or inputfile != '':
+
+
+        # we either download a roster or loading it from a file
+        if inputfile == '':
+            roster_html = download_roster(dt_start, dt_end)
+        else:
+            roster_html = []
+            roster_html.clear()
+            with open(inputfile, 'r') as reader:
+                roster_html.append(dt_start + reader.read())
+
+
 
         # parse the HTML roster into AimsRoster sectors.
         for x in range(len(roster_html)): 
             AimsRoster.extend(parse_roster(roster_html[x], roster_html[x][:10])) # start date is the first 10 chars
         
-        """
-        # Print out all the duties line by line.
-        for y in range(len(AimsRoster)):
-            print(datetime.utcfromtimestamp(AimsRoster[y].date).strftime('%d/%m/%Y') + "   " + AimsRoster[y].flightnum + "    " + AimsRoster[y].from_ + "->" + AimsRoster[y].to + "    " + AimsRoster[y].off + " - " + AimsRoster[y].on + "    " + AimsRoster[y].reg + "    " + AimsRoster[y].otherpilot)
-        """
+        
+        # using local file for debug:
+
+        if inputfile != '':
+            # Print out all the duties line by line.
+            for y in range(len(AimsRoster)):
+                print(datetime.utcfromtimestamp(AimsRoster[y].date).strftime('%d/%m/%Y') + "   " + AimsRoster[y].flightnum + "    " + AimsRoster[y].from_ + "->" + AimsRoster[y].to + "    " + AimsRoster[y].off + " - " + AimsRoster[y].on + "    " + AimsRoster[y].reg + "    " + AimsRoster[y].otherpilot)
+            print("")
+            print("<END OF DUTIES>")
+            sys.exit(0)
+
 
         # download and parse the logbook
         logbook_html = download_logbook(dt_start, dt_end)
@@ -838,4 +925,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.excepthook = show_exception_and_exit
     main()
